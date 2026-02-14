@@ -1,0 +1,123 @@
+Message to Replit
+
+Build this as a deterministic, rule-based scoring classifier (NOT an HMM, not ML, not forecasting). The goal is to classify the current macro environment into one of four predefined states and route me to the strategy “arena where edge historically exists.”
+
+1) Data source + proxies
+
+Use Tiingo EOD data only (no Yahoo). Assume index symbols like ^VIX and ^TNX may not be supported.
+
+Use these proxies (editable in settings):
+
+SPY (equity beta)
+
+RSP (breadth proxy via RSP/SPY relative strength)
+
+HYG and LQD (credit via HYG/LQD ratio)
+
+UUP (USD proxy)
+
+TLT (duration proxy)
+
+DBC (commodities proxy)
+
+VIX proxy: use VIXY (or another VIX ETF) instead of ^VIX
+
+Do not require ^TNX in v1. Define “rates shock” using TLT weakness + commodity confirmation (DBC) and optionally add a yield series later if needed.
+
+2) Frequency
+
+Default Weekly (Friday close) for stability; allow optional Daily mode. Weekly is the production setting.
+
+3) Caching
+
+Use Replit PostgreSQL.
+Create a simple prices table: (ticker, date, open, high, low, close, volume, source).
+Create a metadata table: (ticker, last_fetched_date).
+
+4) Incremental updates
+
+On refresh:
+
+Check last_fetched_date per ticker
+
+Request only data from last_fetched_date + 1 to today
+
+Upsert into the prices table
+Initial backfill should pull ~5 years.
+
+5) Rate limiting
+
+Use a simple sequential request queue:
+
+1–2 seconds delay between API calls
+
+If HTTP 429, exponential backoff + retry
+This should be lightweight (weekly refresh means low call volume).
+
+6) Deterministic State Definitions (4 states)
+
+The app must compute standardized features (z-scores where appropriate) and compute a score for each state. The state with the highest score is selected. Also output a “confidence” computed from normalized scores (softmax is fine).
+
+State names
+
+EQUITY_TREND
+
+VOLATILITY_SHOCK
+
+RATE_SHOCK
+
+LIQUIDITY_SQUEEZE
+
+Feature set (derived from proxies)
+
+Volatility: VIX proxy level & z-score; SPY realized vol z-score
+
+Credit: HYG/LQD ratio momentum + z-score (credit stress when falling)
+
+Breadth: RSP/SPY ratio momentum + z-score (breadth strong when rising)
+
+Rates/duration: TLT momentum (duration stress when falling) + DBC momentum (inflation impulse confirmation)
+
+USD: UUP momentum + z-score (USD squeeze when rising)
+
+Correlation: rolling correlation of SPY returns vs TLT returns; use change in correlation as “correlations rising”
+
+Directional logic
+
+EQUITY_TREND score increases with: strong equity trend + strong breadth + stable credit; decreases with vol shock, credit stress, USD squeeze, rate shock.
+
+VOLATILITY_SHOCK score increases with: vol spike + credit stress + correlations rising; decreases with equity trend/breadth.
+
+RATE_SHOCK score increases with: TLT weakness + commodities strength (and optionally a yield series later); decreases with “risk-on” conditions.
+
+LIQUIDITY_SQUEEZE score increases with: USD strength + credit stress (and often elevated vol); decreases with breadth/equity trend.
+
+Add hysteresis to reduce churn:
+
+Only switch states if new state probability > 0.55 (or stays dominant for N consecutive periods).
+
+Exit threshold 0.45.
+
+7) UI requirements (Bloomberg / academic)
+
+Build as a dark “terminal-style” dashboard (Streamlit or similar is fine).
+
+Must show:
+
+Current State, As-Of Date, Confidence, Runner-Up
+
+Table of state probabilities and scores
+
+“Rationale” panel: show the exact feature readings and what drove the classification (transparent/explainable)
+
+State history (last ~30–80 periods): date, state, confidence
+
+Playbook mapping panel: text describing what each state is “for” (momentum/hedges/rates/liquidity)
+
+Non-goals:
+
+No price prediction
+
+No ML training
+
+No optimization/backtest in v1 (just classification + transparency)
