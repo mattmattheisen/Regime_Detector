@@ -1,0 +1,284 @@
+Build Spec: “Macro State Router” (4-State Structural Classifier)
+Objective
+
+Build a Bloomberg-terminal style dashboard that classifies the current market environment into one of four macro states, without predicting price. The system should identify which structural forces dominate and route the user to the arena where edge historically exists.
+
+This is a regime router, not a return forecaster.
+
+Four States and What They Mean
+
+Rename “Arenas” to States (more institutional). Use these labels (or implement as editable constants):
+
+EQUITY_TREND
+Conditions: low volatility, credit stable, breadth strong
+Edge historically: momentum / trend-following, beta expansion
+
+VOLATILITY_SHOCK
+Conditions: volatility spike, credit widening, correlations rising
+Edge historically: hedges (puts/collars), defensive rotation, long-vol expressions
+
+RATE_SHOCK
+Conditions: yields rising rapidly, duration weak
+Edge historically: short duration, value tilt, commodities / inflation-aware positioning
+
+LIQUIDITY_SQUEEZE
+Conditions: USD strengthening, credit weak
+Edge historically: quality bias, cash/treasuries, lower gross exposure
+
+Data Inputs (Free + Liquid Proxies)
+
+Use Yahoo Finance (or similar free source) and pull adjusted close time series.
+
+Required tickers / proxies:
+
+SPY (equity beta)
+
+RSP (equal-weight SP500, used as a breadth proxy via RSP/SPY relative strength)
+
+^VIX (volatility regime)
+
+HYG and LQD (credit risk vs quality; use HYG/LQD ratio)
+
+UUP (USD proxy)
+
+TLT (duration proxy)
+
+^TNX (10Y yield proxy)
+
+DBC (broad commodities proxy; helps confirm inflation/rate impulse)
+
+Allow the user to edit tickers in settings.
+
+Frequency
+
+Primary mode should be Weekly (default), with optional Daily mode.
+
+Weekly is for stability and lower churn.
+
+Daily is for faster response, higher noise.
+
+Feature Engineering (Structural Indicators)
+
+Compute these derived features:
+
+Volatility
+
+VIX level and/or z-score of VIX vs rolling window
+
+Realized volatility of SPY (rolling std of returns) + z-score
+
+Credit
+
+Credit ratio: HYG/LQD
+
+Credit momentum over short window
+
+Credit z-score (optional)
+
+Breadth (free proxy)
+
+Breadth ratio: RSP/SPY
+
+Breadth momentum + z-score
+
+Rates / Duration
+
+Change in ^TNX over short window (rate impulse)
+
+TLT momentum / weakness as duration pain confirmation
+
+FX / Liquidity
+
+UUP momentum + z-score
+
+Correlations rising
+
+Rolling correlation between SPY returns and TLT returns
+
+Look at change in correlation over a short window; rising correlation contributes to “shock” states
+
+Equity trend
+
+SPY momentum (medium window)
+
+SPY trend vs long MA (optional z-score)
+
+Use z-scores so everything is comparable.
+
+State Model Logic (No Price Prediction)
+
+This is not an HMM requirement. It can be a:
+
+structured score-based classifier (preferred for robustness and transparency), OR
+
+a Markov/HMM later if desired.
+
+Scoring framework
+
+For each state, compute a state score as a weighted combination of features.
+
+Then convert scores into probability-like confidence using a softmax normalization.
+
+Return:
+
+Current state = highest probability
+
+Confidence = probability of top state
+
+Runner-up = second-highest probability
+
+Key directional relationships
+
+EQUITY_TREND should get higher when:
+
+equity trend is positive
+
+breadth strength is positive
+
+volatility is low/falling
+
+credit stress is low
+
+USD squeeze is low
+
+VOLATILITY_SHOCK should get higher when:
+
+volatility is high/spiking
+
+credit stress is rising
+
+correlations are rising
+
+equity trend deteriorates
+
+RATE_SHOCK should get higher when:
+
+^TNX rising quickly (rate impulse)
+
+TLT weak (duration pain)
+
+commodities supportive (optional)
+
+LIQUIDITY_SQUEEZE should get higher when:
+
+USD strength is high
+
+credit stress is high
+
+vol can be elevated (often)
+
+breadth weak / equity trend weak
+
+Anti-whipsaw requirement
+
+Implement hysteresis:
+
+Don’t switch states unless the new state probability clears a threshold (e.g., 0.55) or remains dominant for N consecutive periods.
+
+This prevents churn.
+
+Outputs (What the dashboard must show)
+Top Panel (Terminal feel)
+
+CURRENT STATE: (EQUITY_TREND / VOLATILITY_SHOCK / RATE_SHOCK / LIQUIDITY_SQUEEZE)
+
+AS OF DATE
+
+CONFIDENCE %
+
+RUNNER-UP STATE + %
+
+State Probabilities Table
+
+A ranked table:
+
+State
+
+Probability
+
+Score (optional)
+
+“Rationale” Panel (must-have)
+
+For transparency, show what drove the classification:
+
+Vol indicator readings (VIX z, realized vol z)
+
+Credit stress reading (HYG/LQD momentum + z)
+
+Breadth reading (RSP/SPY momentum + z)
+
+Rates reading (TNX impulse + TLT weakness)
+
+USD reading (UUP momentum + z)
+
+Correlation reading (SPY–TLT corr change z)
+
+Equity trend reading (SPY momentum, trend)
+
+This makes it “academic” instead of “black box.”
+
+“Playbook Mapping” Panel
+
+For the selected state, display a short “what it’s for” list:
+
+EQUITY_TREND → momentum/beta expansion
+
+VOLATILITY_SHOCK → hedges/defense/long vol
+
+RATE_SHOCK → short duration/value/commodities
+
+LIQUIDITY_SQUEEZE → quality/cash/low gross
+
+State History
+
+Show last ~30–80 periods:
+
+date
+
+state label
+
+(optional) confidence
+So we can visually see persistence/churn.
+
+UI Requirements (Bloomberg / academic)
+
+Dark terminal theme
+
+Compact typography
+
+“Institutional” labels (STATE, CONFIDENCE, AS OF)
+
+Minimal charts OK, but tables + structured metrics are the priority
+
+Settings sidebar:
+
+frequency (weekly/daily)
+
+history window (3y/5y/10y)
+
+editable tickers
+
+Non-Goals (Important)
+
+Do not predict SPY next return.
+
+Do not optimize weights to maximize backtest performance in v1.
+
+Do not overcomplicate with 10+ states.
+
+This is a decision router.
+
+Deliverables
+
+A single dashboard app (web) showing state + probabilities + rationale + history
+
+A configuration section for tickers and lookback windows
+
+A simple export button (CSV or JSON) for:
+
+current state
+
+confidence
+
+component readings
