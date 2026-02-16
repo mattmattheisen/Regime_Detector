@@ -90,7 +90,7 @@ function softmax(scores: number[]): number[] {
   return exps.map((e) => e / sum);
 }
 
-const LOOKBACK = 52;
+const LOOKBACK = 104;
 const MOM_WINDOW = 12;
 const SHORT_MOM = 4;
 const CORR_WINDOW = 26;
@@ -325,7 +325,7 @@ export function buildHistory(
   const history: StateHistoryEntry[] = [];
   let previousState: MacroState | null = null;
 
-  const minDataPoints = 60;
+  const minDataPoints = LOOKBACK + MOM_WINDOW;
   const startIdx = Math.max(minDataPoints, spy.length - maxPeriods * step);
 
   for (let i = startIdx; i < spy.length; i += step) {
