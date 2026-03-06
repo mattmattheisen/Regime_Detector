@@ -172,6 +172,12 @@ export default function Dashboard() {
           </aside>
         )}
       </div>
+
+      <footer className="border-t border-border px-4 py-3 text-center" data-testid="footer-branding">
+        <span className="text-xs font-mono text-muted-foreground tracking-wide">
+          Matt Mattheisen &middot; Shomer Analytics
+        </span>
+      </footer>
     </div>
   );
 }
