@@ -95,6 +95,7 @@ const MOM_WINDOW = 12;
 const SHORT_MOM = 4;
 const CORR_WINDOW = 26;
 const CORR_SHORT = 8;
+const VIXY_BIAS_SCALAR = 0.70;
 
 export function computeFeatures(
   priceData: PriceMap,
@@ -109,7 +110,7 @@ export function computeFeatures(
   const dbc = priceData.get(tickers.commodities) || [];
   const vixy = priceData.get(tickers.vixProxy) || [];
 
-  const vixLevels = vixy.map((r) => r.close);
+  const vixLevels = vixy.map((r) => r.close * VIXY_BIAS_SCALAR);
   const vixLevel = vixLevels.length > 0 ? vixLevels[vixLevels.length - 1] : 0;
   const vixZScore = vixLevels.length >= LOOKBACK
     ? zScore(vixLevel, vixLevels, LOOKBACK)
