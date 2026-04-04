@@ -92,7 +92,7 @@ export default function Dashboard() {
             <img src={shomerLogo} alt="Shomer Analytics" className="h-12 w-auto" data-testid="img-logo" />
             <div className="flex items-center gap-3">
               <h1 className="font-mono text-sm font-bold tracking-wide" data-testid="text-app-title">
-                MACRO STATE ROUTER
+                REGIME DETECTOR
               </h1>
               <Badge variant="outline" className="font-mono text-[10px]" data-testid="badge-version">
                 v1.0
