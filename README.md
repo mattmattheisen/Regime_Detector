@@ -1,4 +1,4 @@
-# Macro State Router
+# Regime_Detector
 
 A Bloomberg-terminal style dashboard that classifies the current market environment into one of four macro regimes using a deterministic, rule-based scoring classifier. Built with a React frontend, Express backend, and PostgreSQL caching layer.
 
