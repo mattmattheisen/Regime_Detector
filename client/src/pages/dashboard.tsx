@@ -88,13 +88,16 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center justify-between gap-3 px-4 py-2">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="font-mono text-sm font-bold tracking-wide" data-testid="text-app-title">
-              MACRO STATE ROUTER
-            </h1>
-            <Badge variant="outline" className="font-mono text-[10px]" data-testid="badge-version">
-              v1.0
-            </Badge>
+          <div className="flex items-center gap-4 flex-wrap">
+            <img src={shomerLogo} alt="Shomer Analytics" className="h-12 w-auto" data-testid="img-logo" />
+            <div className="flex items-center gap-3">
+              <h1 className="font-mono text-sm font-bold tracking-wide" data-testid="text-app-title">
+                MACRO STATE ROUTER
+              </h1>
+              <Badge variant="outline" className="font-mono text-[10px]" data-testid="badge-version">
+                v1.0
+              </Badge>
+            </div>
           </div>
           <div className="flex items-center gap-1">
             <div className="flex items-center border border-border rounded-md overflow-visible">
@@ -174,8 +177,8 @@ export default function Dashboard() {
         )}
       </div>
 
-      <footer className="border-t border-border px-4 py-2 flex items-center justify-center" data-testid="footer-branding">
-        <img src={shomerLogo} alt="Shomer Analytics" className="h-8 w-auto" />
+      <footer className="border-t border-border px-4 py-2 text-center" data-testid="footer-branding">
+        <span className="text-xs font-mono text-muted-foreground tracking-wide">Matt Mattheisen &middot; Shomer Analytics</span>
       </footer>
     </div>
   );
