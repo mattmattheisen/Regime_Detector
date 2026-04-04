@@ -1,0 +1,138 @@
+Replit is giving you a possible workaround, not a clean diagnosis.
+
+And in your case, I would not start with:
+
+NODE_TLS_REJECT_UNAUTHORIZED=0
+
+That is the “make the smoke alarm stop beeping” move. It can get you unstuck temporarily, but it disables TLS verification for the whole Node process. On a live app, that is sloppy.
+
+What makes me skeptical of Replit’s answer is this:
+
+Tiingo uses a normal public certificate
+Render is a mainstream host
+a plain Tiingo HTTPS call should not usually trigger a self-signed certificate error
+
+So if you are seeing "self-signed certificate", the more likely possibilities are:
+
+your app is not actually calling Tiingo directly
+there is a proxy, wrapper, database tunnel, or internal service in between
+an environment variable or custom fetch layer is redirecting the request
+you have mixed up two separate errors: a build/import problem and a runtime certificate problem
+
+And from your earlier screenshots, that last point matters a lot.
+
+You have had at least two different failures:
+
+tsx: not found
+then ERR_MODULE_NOT_FOUND
+and separately a runtime-looking "self-signed certificate" error on the app screen
+
+Those are not all the same root cause.
+
+My honest take
+
+Replit’s advice is fine as a temporary test, but not as the first real fix.
+
+If you want to test whether TLS verification is the runtime blocker
+
+You can set this in Render temporarily:
+
+NODE_TLS_REJECT_UNAUTHORIZED=0
+
+Then redeploy and test the fetch button.
+
+If it suddenly works, that tells you:
+
+yes, the failing call is TLS-related
+but you still need to find which outbound request is causing it
+
+Then remove that setting and fix the actual source.
+
+Better approach
+
+You want to identify the exact failing request.
+
+In your server code, around the Tiingo fetch, add logging like this:
+
+console.log("Fetching from Tiingo:", url);
+
+And wrap the fetch in a try/catch:
+
+try {
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Token ${process.env.TIINGO_API_KEY}`
+    }
+  });
+  console.log("Tiingo response status:", response.status);
+} catch (err) {
+  console.error("Tiingo fetch failed:", err);
+  throw err;
+}
+
+If you are using axios:
+
+try {
+  const response = await axios.get(url, {
+    headers: {
+      Authorization: `Token ${process.env.TIINGO_API_KEY}`
+    }
+  });
+  console.log("Tiingo response status:", response.status);
+} catch (err) {
+  console.error("Tiingo fetch failed:", err);
+  throw err;
+}
+
+That will tell you whether the failing call is really Tiingo.
+
+Why I would not accept the PostgreSQL theory at face value
+
+If the UI says the error appears when you hit Fetch Data, and the app is a regime detector pulling market data, then yes, database writes could be involved. But the wording "self-signed certificate" sounds more like an outbound HTTPS call than a normal Postgres auth/config issue.
+
+Still, if your backend does this sequence:
+
+fetch Tiingo
+save to Postgres
+return result
+
+then either step could fail.
+
+So your backend logs need to show:
+
+“starting Tiingo fetch”
+“Tiingo fetch succeeded”
+“starting DB write”
+“DB write succeeded”
+
+That will isolate it fast.
+
+What I recommend
+
+Do this in order:
+
+First, ignore Replit’s global TLS-disable suggestion as the real fix.
+
+Second, add logging around:
+
+the Tiingo fetch
+the DB connection/write
+any other outbound HTTPS call
+
+Third, redeploy and inspect Render logs.
+
+Fourth, only if you want a quick diagnostic test, temporarily set:
+
+NODE_TLS_REJECT_UNAUTHORIZED=0
+
+If that makes it work, great — you learned the problem is certificate verification. Then remove it and trace the exact request.
+
+Bottom line
+
+Replit is not necessarily wrong, but it is jumping too quickly to the bluntest fix.
+
+The better framing is:
+
+“Use NODE_TLS_REJECT_UNAUTHORIZED=0 only as a short-lived diagnostic step, not the solution.”
+
+If you paste the fetcher route or the Tiingo/API code and the DB write section, I’ll show you exactly where to instrument it and what to change.

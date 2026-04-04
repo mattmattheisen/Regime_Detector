@@ -35,12 +35,14 @@ function sleep(ms: number): Promise<void> {
 async function fetchWithRetry(url: string, retries = MAX_RETRIES): Promise<Response> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
+      log(`[DIAG] Fetching URL: ${url} (attempt ${attempt + 1})`, "tiingo");
       const res = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Token ${process.env.TIINGO_API_KEY}`,
         },
       });
+      log(`[DIAG] Tiingo response status: ${res.status}`, "tiingo");
 
       if (res.status === 429) {
         const backoff = Math.pow(2, attempt + 1) * 1000;
@@ -56,6 +58,7 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES): Promise<Respo
 
       return res;
     } catch (err: any) {
+      log(`[DIAG] Fetch error (attempt ${attempt + 1}): ${err.message} | code: ${err.code} | type: ${err.constructor?.name}`, "tiingo");
       if (attempt === retries) throw err;
       const backoff = Math.pow(2, attempt) * 1000;
       log(`Request failed: ${err.message}. Retrying in ${backoff}ms`, "tiingo");

@@ -81,17 +81,24 @@ async function getDashboardData(
     tickerMap[key] = value.toUpperCase();
   }
 
+  log(`[DIAG] Reading prices from DB for frequency: ${frequency}`, "api");
   const priceData = new Map<string, { date: string; close: number }[]>();
 
   for (const ticker of Object.values(tickerMap)) {
-    const rows =
-      frequency === "weekly"
-        ? await storage.getWeeklyPrices(ticker)
-        : await storage.getPrices(ticker);
-    priceData.set(
-      ticker,
-      rows.map((r) => ({ date: r.date, close: r.close }))
-    );
+    try {
+      const rows =
+        frequency === "weekly"
+          ? await storage.getWeeklyPrices(ticker)
+          : await storage.getPrices(ticker);
+      log(`[DIAG] DB read OK for ${ticker}: ${rows.length} rows`, "api");
+      priceData.set(
+        ticker,
+        rows.map((r) => ({ date: r.date, close: r.close }))
+      );
+    } catch (err: any) {
+      log(`[DIAG] DB read FAILED for ${ticker}: ${err.message}`, "api");
+      throw err;
+    }
   }
 
   const history = buildHistory(priceData, tickerMap, frequency);
