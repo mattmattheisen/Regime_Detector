@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, Settings, Download, Activity } from "lucide-react";
 import { useState } from "react";
+import shomerLogo from "@assets/Shomer_Analytics_Logo_1775340026904.png";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -173,10 +174,8 @@ export default function Dashboard() {
         )}
       </div>
 
-      <footer className="border-t border-border px-4 py-3 text-center" data-testid="footer-branding">
-        <span className="text-xs font-mono text-muted-foreground tracking-wide">
-          Matt Mattheisen &middot; Shomer Analytics
-        </span>
+      <footer className="border-t border-border px-4 py-2 flex items-center justify-center" data-testid="footer-branding">
+        <img src={shomerLogo} alt="Shomer Analytics" className="h-8 w-auto" />
       </footer>
     </div>
   );
