@@ -1,0 +1,88 @@
+You are a senior TypeScript/Node.js quant engineer helping me upgrade my deployed Regime Detector app.
+
+Goal:
+Add a robust outlier-filtering layer to the data pipeline using a MAD/Hampel-style filter, but ONLY as a preprocessing / data-quality step. Do NOT add MAD as a displayed market regime criterion or as a new classification feature. It should clean incoming data before existing transformations, z-scores, ratios, momentum calculations, and regime probabilities are computed.
+
+App context:
+- The app is a Regime Detector deployed on Render
+- It currently classifies 4 states: Equity Trend, Volatility Shock, Liquidity Squeeze, Rate Shock
+- It uses normalized features like z-scores, ratios, and momentum
+- Current classification logic should remain intact unless absolutely necessary
+- I want cleaner inputs, not a redefinition of the model
+
+What I need you to build:
+1. Insert a preprocessing layer into the pipeline:
+   Raw data
+   -> outlier filter
+   -> transformations / returns / ratios
+   -> z-scores
+   -> regime classification
+
+2. Implement a rolling MAD / Hampel filter on RETURN SERIES, not raw prices
+   - Use log returns where appropriate:
+     r_t = ln(P_t / P_{t-1})
+   - Do not apply the filter directly to nonstationary raw prices unless there is a very good reason
+   - Design this for market data series like VIX proxy, HYG, LQD, RSP, SPY, TLT, DBC, etc.
+
+3. The filter should primarily catch obvious bad ticks / garbage prints, not legitimate regime shifts
+   - It should be conservative
+   - Avoid stripping real volatility spikes that are actually informative
+   - Use a Hampel-style approach with rolling median and MAD-based thresholds
+
+4. Add practical protections against false filtering
+   - Do not automatically suppress large moves that persist across multiple bars
+   - Consider allowing suspicious points through if they are confirmed by:
+     a) persistence across more than 1 bar
+     b) cross-asset confirmation
+     c) volume spike, when volume data exists
+   - This logic can be simple and modular; do not overengineer
+
+5. Add logging / observability
+   - Log when a point is flagged
+   - Log the original value, filtered value, timestamp, symbol/series, and reason
+   - Make this easy to inspect in Render logs and easy to extend later
+   - Add a config flag to enable/disable verbose filter logging
+
+6. Add configuration
+   Create a small config object or env-driven settings for:
+   - rolling window length
+   - threshold multiplier
+   - minimum MAD floor
+   - enable/disable filter
+   - enable/disable verbose logging
+
+7. Keep the code clean and production-ready
+   - Use TypeScript
+   - Keep functions modular and reusable
+   - Add comments where the logic is non-obvious
+   - Avoid breaking existing app behavior
+   - Preserve current classification outputs as much as possible aside from improved data cleanliness
+
+Important constraints:
+- Do NOT add a “MAD score” to the dashboard as a regime signal
+- Do NOT treat MAD as a fifth regime input
+- Do NOT rewrite the whole app unless necessary
+- Keep the UI unchanged unless there is a very small useful improvement, such as an optional data-quality status indicator
+- Focus on backend/data pipeline integrity
+
+What I want from you in your response:
+1. First, inspect the current project structure and identify where the preprocessing layer should be inserted
+2. Then propose the exact files to modify
+3. Then implement the code
+4. Then explain what changed in plain English
+5. Then suggest 2-3 small tests I can run to verify:
+   - a single bad tick gets filtered
+   - a legitimate sustained move is NOT filtered
+   - downstream z-scores still compute correctly
+
+Preferred implementation guidance:
+- Use a Hampel-style rolling median + MAD threshold on returns
+- Include a sensible MAD floor so near-zero variance series do not blow up
+- Keep the logic transparent and debuggable
+- Favor reliability over cleverness
+
+Please start by reading the existing codebase and showing me:
+A) where raw series enter the system
+B) where z-scores / momentum / ratios are computed
+C) your recommended insertion point for the new outlier-filter layer
+Then proceed to code changes.
