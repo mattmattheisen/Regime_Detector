@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { fetchAllTickers } from "./tiingo";
 import { buildClassification, buildHistory } from "./classifier";
+import { filterPriceMap, getOutlierFilterConfig } from "./outlier-filter";
 import { DEFAULT_TICKERS } from "@shared/schema";
 import type { TickerConfig, DashboardData } from "@shared/schema";
 import { log } from "./index";
@@ -101,9 +102,12 @@ async function getDashboardData(
     }
   }
 
-  const history = buildHistory(priceData, tickerMap, frequency);
+  const filterConfig = getOutlierFilterConfig();
+  const { priceData: filteredPriceData } = filterPriceMap(priceData, filterConfig);
+
+  const history = buildHistory(filteredPriceData, tickerMap, frequency);
   const previousState = history.length > 0 ? history[history.length - 1].state : null;
-  const classification = buildClassification(priceData, tickerMap, frequency, previousState);
+  const classification = buildClassification(filteredPriceData, tickerMap, frequency, previousState);
 
   const tickerList = getTickerList(config);
   const dataStatus = await storage.getDataStatus(tickerList);

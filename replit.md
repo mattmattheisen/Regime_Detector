@@ -11,6 +11,7 @@ Bloomberg-terminal style dashboard that classifies the current market environmen
 ## Key Files
 - `shared/schema.ts` - Data models, state definitions, types
 - `server/tiingo.ts` - Tiingo API fetcher with rate-limit queue and exponential backoff
+- `server/outlier-filter.ts` - MAD/Hampel-style data-quality filter for isolated return outliers before classification
 - `server/classifier.ts` - Deterministic state classifier with z-scores, scoring, hysteresis
 - `server/storage.ts` - Database storage layer for prices and metadata
 - `server/routes.ts` - API endpoints (dashboard, refresh, export, data-status)
@@ -38,6 +39,12 @@ Tickers: SPY, RSP, HYG, LQD, UUP, TLT, DBC, VIXY
 - `metadata` table tracks last_fetched_date per ticker
 - Incremental updates: only fetches bars after last cached date
 - Rate limiting: 1.5s delay between requests, exponential backoff on 429
+
+## Data Quality
+- Cached Tiingo price series are preprocessed with a conservative MAD/Hampel-style filter on log returns before feature calculations
+- The filter targets isolated bad ticks only and preserves sustained same-direction moves
+- Config flags: `OUTLIER_FILTER_ENABLED`, `OUTLIER_FILTER_VERBOSE`, `OUTLIER_FILTER_WINDOW`, `OUTLIER_FILTER_THRESHOLD`, `OUTLIER_FILTER_MAD_FLOOR`
+- MAD filtering is not a displayed regime signal and is not part of the scoring model
 
 ## User Preferences
 - Dark terminal theme (Bloomberg-style)
